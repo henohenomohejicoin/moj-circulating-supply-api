@@ -34,4 +34,4 @@ export default async function handler(request, response) {
       error: "Failed to fetch supply"
     });
   }
-} 
+}
