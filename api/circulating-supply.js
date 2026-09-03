@@ -23,7 +23,7 @@ export default async function handler(request, response) {
       });
     }
 
-    const supply = Number(data.result.value.amount);
+    const supply = Number(data.result.value.uiAmountString);
 
     return response.status(200).json({
       circulatingSupply: supply
