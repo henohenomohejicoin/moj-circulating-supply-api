@@ -126,21 +126,17 @@ export default async function handler(req, res) {
             headers: {
               "Content-Type": "application/json"
             },
-           body: JSON.stringify({
+          body: JSON.stringify({
   chat_id: chatId,
   parse_mode: "Markdown",
   text:
-    `🗿 *MOJ MARKET*\n\n` +
-    `━━━━━━━━━━━━━━\n\n` +
-    `💰 *PRICE*\n` +
-    `$${data.priceUsd ?? "N/A"}\n\n` +
-    `📊 *MARKET CAP*\n` +
-    `$${data.marketCap ?? "N/A"}\n\n` +
-    `📈 *24H VOLUME*\n` +
-    `$${data.volume24h ?? "N/A"}\n\n` +
-    `🔄 *24H CHANGE*\n` +
-    `${data.priceChange24h ?? "N/A"}%\n\n` +
-    `━━━━━━━━━━━━━━\n\n` +
+    `🗿 *MOJ MARKET*\n` +
+    `━━━━━━━━━━━━━━\n` +
+    `💰 *PRICE:* $${data.priceUsd ?? "N/A"}\n` +
+    `📊 *MARKET CAP:* $${data.marketCap ?? "N/A"}\n` +
+    `📈 *24H VOLUME:* $${data.volume24h ?? "N/A"}\n` +
+    `🔄 *24H CHANGE:* ${data.priceChange24h ?? "N/A"}%\n` +
+    `━━━━━━━━━━━━━━\n` +
     `*MOJ • OFFICIAL MARKET DATA*`
 })
           }
