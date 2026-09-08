@@ -108,7 +108,53 @@ export default async function handler(req, res) {
         );
       }
     }
+ // /price
+    if (text === "/price") {
+      try {
+        const host = req.headers.host;
 
+        const response = await fetch(
+          `https://${host}/api/price`
+        );
+
+        const data = await response.json();
+
+        await fetch(
+          `https://api.telegram.org/bot${token}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text:
+                `🗿 MOJ PRICE\n\n` +
+                `Price: $${data.priceUsd ?? "N/A"}\n` +
+                `Market Cap: $${data.marketCap ?? "N/A"}\n` +
+                `24h Volume: $${data.volume24h ?? "N/A"}\n` +
+                `24h Change: ${data.priceChange24h ?? "N/A"}%`
+            })
+          }
+        );
+      } catch (error) {
+        console.error("Price error:", error);
+
+        await fetch(
+          `https://api.telegram.org/bot${token}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "⚠️ MOJ price data could not be retrieved."
+            })
+          }
+        );
+      }
+    }
     return res.status(200).json({ ok: true });
   }
 
