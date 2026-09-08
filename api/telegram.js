@@ -58,7 +58,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             chat_id: chatId,
             text:
-              "🗿 MOJ Bot is online.\n\nTelegram webhook connected successfully."
+              "🟢 MOJ Bot is online.\n\nTelegram webhook connected successfully."
           })
         }
       );
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               chat_id: chatId,
               text:
-                `🗿 MOJ SUPPLY\n\n` +
+                `🟢 MOJ SUPPLY\n\n` +
                 `Circulating Supply:\n${data.circulatingSupply ?? "N/A"} MOJ`
             })
           }
@@ -130,7 +130,7 @@ export default async function handler(req, res) {
   chat_id: chatId,
   parse_mode: "Markdown",
   text:
-    `🗿 *MOJ MARKET*\n` +
+    `🟢 *MOJ MARKET*\n` +
     `━━━━━━━━━━━━━━\n` +
     `💰 *PRICE:* $${data.priceUsd ?? "N/A"}\n` +
     `📊 *MARKET CAP:* $${data.marketCap ?? "N/A"}\n` +
