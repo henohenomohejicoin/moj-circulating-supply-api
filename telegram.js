@@ -4,12 +4,29 @@ export default async function handler(req, res) {
   }
 
   const update = req.body;
+  const message = update?.message;
 
-  console.log("Telegram update:", JSON.stringify(update));
+  if (!message?.chat?.id) {
+    return res.status(200).json({ ok: true });
+  }
 
-  return res.status(200).json({
-    ok: true,
-    chat_id: update?.message?.chat?.id ?? null,
-    chat_type: update?.message?.chat?.type ?? null,
-  });
+  const chatId = message.chat.id;
+  const text = message.text || "";
+
+  if (text === "/test") {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: "🗿 MOJ Bot is online.\n\nTelegram webhook connected successfully."
+      })
+    });
+  }
+
+  return res.status(200).json({ ok: true });
 }
