@@ -16,42 +16,47 @@ export default async function handler(req, res) {
     });
   }
 
-  const tx = req.body || {};
+  try {
+    const tx = req.body || {};
 
-  const text =
-    "🎭 Henohenomoheji Buy!\n\n" +
-    "🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n\n" +
-    `🔀 Spent: ${tx.spent ?? "N/A"}\n` +
-    `🔀 Got: ${tx.got ?? "N/A"} MOJ\n` +
-    `👤 Buyer: ${tx.buyer ?? "N/A"}\n` +
-    `🪙 ${tx.newHolder ? "New Holder" : "Holder"}\n` +
-    `🏷 Price: $${tx.price ?? "N/A"}\n` +
-    `💸 Market Cap: $${tx.marketCap ?? "N/A"}\n\n` +
-    "MOJ • OFFICIAL BUY";
+    const text =
+      "🎭 Henohenomoheji Buy!\n\n" +
+      "🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n\n" +
+      `🔀 Spent: ${tx.spent ?? "N/A"}\n` +
+      `🔀 Got: ${tx.got ?? "N/A"} MOJ\n` +
+      `👤 Buyer: ${tx.buyer ?? "N/A"}\n` +
+      `🪙 ${tx.newHolder ? "New Holder" : "Holder"}\n` +
+      `🏷 Price: $${tx.price ?? "N/A"}\n` +
+      `💸 Market Cap: $${tx.marketCap ?? "N/A"}\n\n` +
+      "MOJ • OFFICIAL BUY";
 
-  const telegramResponse = await fetch(
-    `https://api.telegram.org/bot${token}/sendMessage`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text
-      })
-    }
-  );
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${token}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text
+        })
+      }
+    );
 
-  const telegramData = await telegramResponse.json();
+    const telegramData = await telegramResponse.json();
 
-  return res.status(200).json({
-    ok: telegramResponse.ok,
-    telegram: telegramData
-  });
-}
-  return res.status(200).json({
-    ok: true,
-    telegram: telegramData
-  });
+    return res.status(200).json({
+      ok: telegramResponse.ok,
+      telegram: telegramData
+    });
+
+  } catch (error) {
+    console.error("Buy notification error:", error);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Telegram notification failed"
+    });
+  }
 }
