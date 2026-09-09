@@ -47,7 +47,10 @@ export default async function handler(req, res) {
     const text = message.text || "";
 
     // /test
-    if (text === "/test") {
+    if (
+      text === "/test" ||
+      text === "/test@henohenomoheji_new_buybot"
+    ) {
       await fetch(
         `https://api.telegram.org/bot${token}/sendMessage`,
         {
@@ -65,7 +68,10 @@ export default async function handler(req, res) {
     }
 
     // /supply
-    if (text === "/supply") {
+    if (
+      text === "/supply" ||
+      text === "/supply@henohenomoheji_new_buybot"
+    ) {
       try {
         const host = req.headers.host;
 
@@ -102,14 +108,19 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
               chat_id: chatId,
-              text: "⚠️ MOJ supply data could not be retrieved."
+              text:
+                "⚠️ MOJ supply data could not be retrieved."
             })
           }
         );
       }
     }
- // /price
-    if (text === "/price") {
+
+    // /price
+    if (
+      text === "/price" ||
+      text === "/price@henohenomoheji_new_buybot"
+    ) {
       try {
         const host = req.headers.host;
 
@@ -126,19 +137,19 @@ export default async function handler(req, res) {
             headers: {
               "Content-Type": "application/json"
             },
-          body: JSON.stringify({
-  chat_id: chatId,
-  parse_mode: "Markdown",
-  text:
-    `🟢 *MOJ MARKET*\n` +
-    `━━━━━━━━━━━━━━\n` +
-    `💰 *PRICE:* $${data.priceUsd ?? "N/A"}\n` +
-    `📊 *MARKET CAP:* $${data.marketCap ?? "N/A"}\n` +
-    `📈 *24H VOLUME:* $${data.volume24h ?? "N/A"}\n` +
-    `🔄 *24H CHANGE:* ${data.priceChange24h ?? "N/A"}%\n` +
-    `━━━━━━━━━━━━━━\n` +
-    `*MOJ • OFFICIAL MARKET DATA*`
-})
+            body: JSON.stringify({
+              chat_id: chatId,
+              parse_mode: "Markdown",
+              text:
+                `🟢 *MOJ MARKET*\n` +
+                `━━━━━━━━━━━━━━\n` +
+                `💰 *PRICE:* $${data.priceUsd ?? "N/A"}\n` +
+                `📊 *MARKET CAP:* $${data.marketCap ?? "N/A"}\n` +
+                `📈 *24H VOLUME:* $${data.volume24h ?? "N/A"}\n` +
+                `🔄 *24H CHANGE:* ${data.priceChange24h ?? "N/A"}%\n` +
+                `━━━━━━━━━━━━━━\n` +
+                `*MOJ • OFFICIAL MARKET DATA*`
+            })
           }
         );
       } catch (error) {
@@ -153,12 +164,14 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
               chat_id: chatId,
-              text: "⚠️ MOJ price data could not be retrieved."
+              text:
+                "⚠️ MOJ price data could not be retrieved."
             })
           }
         );
       }
     }
+
     return res.status(200).json({ ok: true });
   }
 
