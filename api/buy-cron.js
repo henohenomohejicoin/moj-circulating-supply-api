@@ -1,8 +1,4 @@
 export default async function handler(req, res) {
-  // --------------------------------------------------
-  // Cron Secret
-  // --------------------------------------------------
-
   const cronSecret = process.env.CRON_SECRET;
 
   if (cronSecret) {
@@ -24,39 +20,53 @@ export default async function handler(req, res) {
   }
 
   try {
-    const host =
-      process.env.VERCEL_URL ||
-      req.headers.host;
+    const host = req.headers.host;
 
     const baseUrl = `https://${host}`;
 
-    // --------------------------------------------------
-    // 1. Buy monitor
-    // --------------------------------------------------
-
     const monitorResponse = await fetch(
-      `${baseUrl}/api/buy-monitor`
+      `${baseUrl}/api/buy-monitor`,
+      {
+        headers: {
+          "Accept": "application/json"
+        }
+      }
     );
 
+    const monitorText = await monitorResponse.text();
+
     if (!monitorResponse.ok) {
-      throw new Error("Buy monitor HTTP error");
+      console.error(
+        "Buy monitor HTTP error:",
+        monitorResponse.status,
+        monitorText
+      );
+
+      throw new Error(
+        `Buy monitor HTTP ${monitorResponse.status}`
+      );
     }
 
-    const monitorData =
-      await monitorResponse.json();
+    let monitorData;
+
+    try {
+      monitorData = JSON.parse(monitorText);
+    } catch (error) {
+      console.error(
+        "Buy monitor returned non-JSON:",
+        monitorText.slice(0, 500)
+      );
+
+      throw new Error(
+        "Buy monitor returned invalid JSON"
+      );
+    }
 
     if (!monitorData.ok) {
-      return res.status(500).json({
-        ok: false,
-        error: "Buy monitor failed"
-      });
+      throw new Error("Buy monitor failed");
     }
 
     const buys = monitorData.buys || [];
-
-    // --------------------------------------------------
-    // Buyなし
-    // --------------------------------------------------
 
     if (buys.length === 0) {
       return res.status(200).json({
@@ -66,10 +76,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // --------------------------------------------------
-    // 2. 最新価格取得
-    // --------------------------------------------------
-
     let priceData = {};
 
     try {
@@ -78,15 +84,12 @@ export default async function handler(req, res) {
       );
 
       if (priceResponse.ok) {
-        priceData = await priceResponse.json();
+        const priceText = await priceResponse.text();
+        priceData = JSON.parse(priceText);
       }
     } catch (error) {
       console.error("Price API error:", error);
     }
-
-    // --------------------------------------------------
-    // 3. BuyをTelegramへ送信
-    // --------------------------------------------------
 
     const results = [];
 
@@ -107,8 +110,7 @@ export default async function handler(req, res) {
 
               got: buy.got ?? "N/A",
 
-              buyer:
-                buy.buyer ?? "N/A",
+              buyer: buy.buyer ?? "N/A",
 
               newHolder:
                 buy.newHolder === true,
@@ -125,12 +127,25 @@ export default async function handler(req, res) {
           }
         );
 
-        const buyData =
-          await buyResponse.json();
+        const buyText =
+          await buyResponse.text();
+
+        let buyData = {};
+
+        try {
+          buyData = JSON.parse(buyText);
+        } catch (error) {
+          console.error(
+            "Buy API returned non-JSON:",
+            buyText.slice(0, 500)
+          );
+        }
 
         results.push({
           signature: buy.signature,
-          ok: buyData.ok === true
+          ok:
+            buyResponse.ok &&
+            buyData.ok === true
         });
 
       } catch (error) {
@@ -146,10 +161,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // --------------------------------------------------
-    // 4. 結果
-    // --------------------------------------------------
-
     return res.status(200).json({
       ok: true,
       detected: buys.length,
@@ -164,7 +175,8 @@ export default async function handler(req, res) {
 
     return res.status(500).json({
       ok: false,
-      error: "Buy cron error"
+      error: "Buy cron error",
+      detail: error.message
     });
   }
 }
