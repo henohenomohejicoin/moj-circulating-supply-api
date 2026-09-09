@@ -45,7 +45,7 @@ export default async function handler(req, res) {
 
     const chatId = message.chat.id;
     const text = message.text || "";
-
+console.log("TELEGRAM_CHAT_ID:", chatId);
     // /test
     if (
       text === "/test" ||
