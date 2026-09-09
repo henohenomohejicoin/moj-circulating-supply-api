@@ -44,7 +44,32 @@ export default async function handler(req, res) {
     }
 
     const chatId = message.chat.id;
-    const text = message.text || "";
+const text = message.text || "";
+
+    // Custom Emoji ID check
+    if (message.entities) {
+      const customEmoji = message.entities.find(
+        (entity) => entity.type === "custom_emoji"
+      );
+
+      if (customEmoji?.custom_emoji_id) {
+        await fetch(
+          `https://api.telegram.org/bot${token}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text:
+                `Custom Emoji ID:\n${customEmoji.custom_emoji_id}`
+            })
+          }
+        );
+      }
+    }
+
 console.log("TELEGRAM_CHAT_ID:", chatId);
     // /test
     if (
