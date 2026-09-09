@@ -1,1 +1,52 @@
+export default async function handler(req, res) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
 
+  if (!token || !chatId) {
+    return res.status(500).json({
+      ok: false,
+      error: "Telegram settings are missing"
+    });
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      ok: false,
+      error: "POST only"
+    });
+  }
+
+  const tx = req.body || {};
+
+  const text =
+    "🎭 Henohenomoheji Buy!\n\n" +
+    "🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n\n" +
+    `🔀 Spent: ${tx.spent ?? "N/A"}\n` +
+    `🔀 Got: ${tx.got ?? "N/A"} MOJ\n` +
+    `👤 Buyer: ${tx.buyer ?? "N/A"}\n` +
+    `🪙 ${tx.newHolder ? "New Holder" : "Holder"}\n` +
+    `🏷 Price: $${tx.price ?? "N/A"}\n` +
+    `💸 Market Cap: $${tx.marketCap ?? "N/A"}\n\n` +
+    "MOJ • OFFICIAL BUY";
+
+  const telegramResponse = await fetch(
+    `https://api.telegram.org/bot${token}/sendMessage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text
+      })
+    }
+  );
+
+  const telegramData = await telegramResponse.json();
+
+  return res.status(200).json({
+    ok: true,
+    telegram: telegramData
+  });
+}
