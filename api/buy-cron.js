@@ -20,9 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const host = req.headers.host;
-
-    const baseUrl = `https://${host}`;
+  const baseUrl = "https://project-ymv8n.vercel.app";
 
     const monitorResponse = await fetch(
       `${baseUrl}/api/buy-monitor`,
