@@ -1,3 +1,7 @@
+import { Redis } from "@upstash/redis";
+
+const redis = Redis.fromEnv();
+
 export default async function handler(req, res) {
   const cronSecret = process.env.CRON_SECRET;
 
@@ -20,18 +24,21 @@ export default async function handler(req, res) {
   }
 
   try {
-  const baseUrl = "https://project-ymv8n.vercel.app";
+    const baseUrl =
+      "https://project-ymv8n.vercel.app";
 
+    // Buy monitor
     const monitorResponse = await fetch(
       `${baseUrl}/api/buy-monitor`,
       {
         headers: {
-          "Accept": "application/json"
+          Accept: "application/json"
         }
       }
     );
 
-    const monitorText = await monitorResponse.text();
+    const monitorText =
+      await monitorResponse.text();
 
     if (!monitorResponse.ok) {
       console.error(
@@ -48,7 +55,8 @@ export default async function handler(req, res) {
     let monitorData;
 
     try {
-      monitorData = JSON.parse(monitorText);
+      monitorData =
+        JSON.parse(monitorText);
     } catch (error) {
       console.error(
         "Buy monitor returned non-JSON:",
@@ -61,69 +69,138 @@ export default async function handler(req, res) {
     }
 
     if (!monitorData.ok) {
-      throw new Error("Buy monitor failed");
+      throw new Error(
+        "Buy monitor failed"
+      );
     }
 
-    const buys = monitorData.buys || [];
+    const buys =
+      monitorData.buys || [];
 
     if (buys.length === 0) {
       return res.status(200).json({
         ok: true,
         detected: 0,
-        message: "No new buys detected"
+        processed: 0,
+        skipped: 0,
+        message: "No buys detected"
       });
     }
 
+    // Price
     let priceData = {};
 
     try {
-      const priceResponse = await fetch(
-        `${baseUrl}/api/price`
-      );
+      const priceResponse =
+        await fetch(
+          `${baseUrl}/api/price`
+        );
 
       if (priceResponse.ok) {
-        const priceText = await priceResponse.text();
-        priceData = JSON.parse(priceText);
+        const priceText =
+          await priceResponse.text();
+
+        priceData =
+          JSON.parse(priceText);
       }
     } catch (error) {
-      console.error("Price API error:", error);
+      console.error(
+        "Price API error:",
+        error
+      );
     }
 
     const results = [];
 
+    let processedCount = 0;
+    let skippedCount = 0;
+
+    // Process buys
     for (const buy of buys) {
       try {
-        const buyResponse = await fetch(
-          `${baseUrl}/api/buy`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              spent:
-                buy.spentSol !== undefined
-                  ? `${buy.spentSol} SOL`
-                  : "N/A",
+        const signature =
+          buy.signature;
 
-              got: buy.got ?? "N/A",
+        if (!signature) {
+          console.error(
+            "Buy has no signature:",
+            buy
+          );
 
-              buyer: buy.buyer ?? "N/A",
+          results.push({
+            signature: null,
+            ok: false,
+            skipped: true,
+            reason: "No signature"
+          });
 
-              newHolder:
-                buy.newHolder === true,
+          skippedCount++;
+          continue;
+        }
 
-              price:
-                priceData.priceUsd ?? "N/A",
+        // Redis duplicate check
+        const redisKey =
+          `moj:buy:processed:${signature}`;
 
-              marketCap:
-                priceData.marketCap ?? "N/A",
+        const alreadyProcessed =
+          await redis.get(redisKey);
 
-              signature:
-                buy.signature ?? null
-            })
-          }
-        );
+        if (alreadyProcessed) {
+          console.log(
+            "Skipping duplicate buy:",
+            signature
+          );
+
+          results.push({
+            signature,
+            ok: true,
+            skipped: true,
+            reason: "Already processed"
+          });
+
+          skippedCount++;
+          continue;
+        }
+
+        // Send Telegram notification
+        const buyResponse =
+          await fetch(
+            `${baseUrl}/api/buy`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                spent:
+                  buy.spentSol !== undefined
+                    ? `${buy.spentSol} SOL`
+                    : "N/A",
+
+                got:
+                  buy.got ?? "N/A",
+
+                buyer:
+                  buy.buyer ?? "N/A",
+
+                newHolder:
+                  buy.newHolder === true,
+
+                price:
+                  priceData.priceUsd ??
+                  "N/A",
+
+                marketCap:
+                  priceData.marketCap ??
+                  "N/A",
+
+                signature
+              })
+            }
+          );
 
         const buyText =
           await buyResponse.text();
@@ -131,7 +208,8 @@ export default async function handler(req, res) {
         let buyData = {};
 
         try {
-          buyData = JSON.parse(buyText);
+          buyData =
+            JSON.parse(buyText);
         } catch (error) {
           console.error(
             "Buy API returned non-JSON:",
@@ -139,12 +217,42 @@ export default async function handler(req, res) {
           );
         }
 
-        results.push({
-          signature: buy.signature,
-          ok:
-            buyResponse.ok &&
-            buyData.ok === true
-        });
+        // Only mark as processed after successful notification
+        if (
+          buyResponse.ok &&
+          buyData.ok === true
+        ) {
+          await redis.set(
+            redisKey,
+            "processed"
+          );
+
+          console.log(
+            "Buy processed:",
+            signature
+          );
+
+          results.push({
+            signature,
+            ok: true,
+            skipped: false
+          });
+
+          processedCount++;
+        } else {
+          console.error(
+            "Buy API failed:",
+            signature,
+            buyResponse.status,
+            buyText
+          );
+
+          results.push({
+            signature,
+            ok: false,
+            skipped: false
+          });
+        }
 
       } catch (error) {
         console.error(
@@ -153,8 +261,10 @@ export default async function handler(req, res) {
         );
 
         results.push({
-          signature: buy.signature,
-          ok: false
+          signature:
+            buy.signature ?? null,
+          ok: false,
+          skipped: false
         });
       }
     }
@@ -162,6 +272,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       detected: buys.length,
+      processed: processedCount,
+      skipped: skippedCount,
       results
     });
 
