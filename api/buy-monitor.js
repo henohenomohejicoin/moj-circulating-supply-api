@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         params: [
           mint,
           {
-            limit: 10,
+            limit: 100,
             commitment: "confirmed"
           }
         ]
