@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       "MOJ • OFFICIAL BUY";
 
     const customEmoji =
-      "🫶🫶🫶🫶🫶🫶🫶🫶🫶🫶";
+      "🫶";
 
     const finalText =
       greenLineStart +
