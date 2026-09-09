@@ -115,7 +115,29 @@ export default async function handler(req, res) {
         );
       }
     }
-
+// ca
+if (
+  text === "ca" ||
+  text === "/ca" ||
+  text === "ca@henohenomoheji_new_buybot" ||
+  text === "/ca@henohenomoheji_new_buybot"
+) {
+  await fetch(
+    `https://api.telegram.org/bot${token}/sendMessage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text:
+          "🪙 MOJ CONTRACT ADDRESS\n\n" +
+          "5EcYAi9ETKWMw5F5GuocR2ZBqfN4tGUv4LCdZZVJpump"
+      })
+    }
+  );
+}
     // /price
     if (
       text === "/price" ||
