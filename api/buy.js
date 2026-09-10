@@ -22,14 +22,7 @@ export default async function handler(req, res) {
     const buyer = tx.buyer ?? "";
     const signature = tx.signature ?? "";
 
-    // --------------------------------
-    // 🫶 Purchase amount → 🫶 count
-    // 0.001 SOL = 🫶 1
-    // 0.002 SOL = 🫶 2
-    // 0.005 SOL = 🫶 5
-    // 0.010 SOL = 🫶 10
-    // --------------------------------
-
+    // 0.001 SOL = 🫶 1個
     const spentSol = Number(tx.spent) || 0;
 
     const heartCount = Math.max(
@@ -53,7 +46,14 @@ export default async function handler(req, res) {
       `🔀 Spent: ${tx.spent ?? "N/A"} SOL\n` +
       `🔀 Got: ${tx.got ?? "N/A"} MOJ\n` +
 
-      `👤 Buyer: <a href="https://solscan.io/account/${buyer}">Buyer</a>\n` +
+      `👤 <a href="https://solscan.io/account/${buyer}">Buyer</a>` +
+      (
+        signature
+          ? ` / <a href="https://solscan.io/tx/${signature}">TX</a>`
+          : ""
+      ) +
+
+      "\n" +
 
       `🪙 ${tx.newHolder ? "New Holder" : "Holder"}\n` +
 
@@ -61,21 +61,11 @@ export default async function handler(req, res) {
 
       `💸 Market Cap: $${tx.marketCap ?? "N/A"}\n\n` +
 
-      (
-        signature
-          ? `<a href="https://solscan.io/tx/${signature}">TX</a>\n\n`
-          : ""
-      ) +
-
       "<a href=\"https://henohenomoheji.tok.best/\">WEB</a>｜" +
       "<a href=\"https://x.com/henoheno_xyz\">X</a>｜" +
       "<a href=\"https://t.me/henohenomohejicoin\">TG</a>\n" +
 
       "MOJ • OFFICIAL BUY";
-
-    // --------------------------------
-    // 🎬 5-second MOJ video
-    // --------------------------------
 
     const videoUrl =
       "https://raw.githubusercontent.com/henohenomohejicoin/moj-circulating-supply-api/main/v2_awv-70c5583e14afed18.mp4";
