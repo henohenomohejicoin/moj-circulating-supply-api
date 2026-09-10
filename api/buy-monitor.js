@@ -37,15 +37,18 @@ export default async function handler(req, res) {
       })
     });
 
-    const signaturesData = await signaturesResponse.json();
+    const signaturesData =
+      await signaturesResponse.json();
 
     if (signaturesData.error) {
       throw new Error(
-        signaturesData.error.message || "Solana RPC error"
+        signaturesData.error.message ||
+        "Solana RPC error"
       );
     }
 
-    const signatures = signaturesData.result || [];
+    const signatures =
+      signaturesData.result || [];
 
     const buys = [];
 
@@ -77,13 +80,50 @@ export default async function handler(req, res) {
         })
       });
 
-      const txData = await txResponse.json();
+      const txData =
+        await txResponse.json();
+
       const tx = txData.result;
 
-      if (!tx?.meta || !tx?.transaction) continue;
+      if (!tx?.meta || !tx?.transaction) {
+        continue;
+      }
 
       // --------------------------------------------------
-      // 3. MOJ残高の変化を確認
+      // 3. トランザクションの署名者を取得
+      // --------------------------------------------------
+
+      const accountKeys =
+        tx.transaction.message.accountKeys || [];
+
+      let signerIndex = -1;
+      let buyer = "";
+
+      for (let i = 0; i < accountKeys.length; i++) {
+        const key = accountKeys[i];
+
+        const address =
+          typeof key === "string"
+            ? key
+            : key.pubkey;
+
+        const isSigner =
+          typeof key === "object"
+            ? key.signer === true
+            : false;
+
+        if (isSigner && signerIndex === -1) {
+          signerIndex = i;
+          buyer = address;
+        }
+      }
+
+      if (signerIndex < 0 || !buyer) {
+        continue;
+      }
+
+      // --------------------------------------------------
+      // 4. 署名者のMOJ残高変化だけを見る
       // --------------------------------------------------
 
       const preTokenBalances =
@@ -92,59 +132,37 @@ export default async function handler(req, res) {
       const postTokenBalances =
         tx.meta.postTokenBalances || [];
 
-      const owners = new Map();
+      let preMoj = 0;
+      let postMoj = 0;
 
-      // Before
       for (const balance of preTokenBalances) {
         if (balance.mint !== mint) continue;
+        if (balance.owner !== buyer) continue;
 
-        const owner =
-          balance.owner ||
-          `account-${balance.accountIndex}`;
-
-        const amount =
-          Number(
-            balance.uiTokenAmount?.uiAmountString || 0
-          );
-
-        owners.set(owner, {
-          pre: amount,
-          post: 0,
-          accountIndex: balance.accountIndex
-        });
+        preMoj += Number(
+          balance.uiTokenAmount?.uiAmountString || 0
+        );
       }
 
-      // After
       for (const balance of postTokenBalances) {
         if (balance.mint !== mint) continue;
+        if (balance.owner !== buyer) continue;
 
-        const owner =
-          balance.owner ||
-          `account-${balance.accountIndex}`;
+        postMoj += Number(
+          balance.uiTokenAmount?.uiAmountString || 0
+        );
+      }
 
-        const amount =
-          Number(
-            balance.uiTokenAmount?.uiAmountString || 0
-          );
+      const got = postMoj - preMoj;
 
-        const current =
-          owners.get(owner) || {
-            pre: 0,
-            post: 0,
-            accountIndex: balance.accountIndex
-          };
-
-        current.post = amount;
-
-        owners.set(owner, current);
+      // MOJが増えていない場合はBuyではない
+      if (got <= 0) {
+        continue;
       }
 
       // --------------------------------------------------
-      // 4. SOL残高を確認
+      // 5. 署名者のSOL残高変化
       // --------------------------------------------------
-
-      const accountKeys =
-        tx.transaction.message.accountKeys || [];
 
       const preSolBalances =
         tx.meta.preBalances || [];
@@ -152,77 +170,45 @@ export default async function handler(req, res) {
       const postSolBalances =
         tx.meta.postBalances || [];
 
-      // --------------------------------------------------
-      // 5. MOJ増加 + SOL減少を探す
-      // --------------------------------------------------
-
-      for (const [owner, data] of owners.entries()) {
-        const got = data.post - data.pre;
-
-        if (got <= 0) continue;
-
-        // Buyer候補のaccount indexを探す
-        let buyerIndex = -1;
-
-        for (let i = 0; i < accountKeys.length; i++) {
-          const key = accountKeys[i];
-
-          const address =
-            typeof key === "string"
-              ? key
-              : key.pubkey;
-
-          if (address === owner) {
-            buyerIndex = i;
-            break;
-          }
-        }
-
-        // ------------------------------------------------
-        // BuyerのSOL変化
-        // ------------------------------------------------
-
-        let spentSol = 0;
-
-        if (
-          buyerIndex >= 0 &&
-          preSolBalances[buyerIndex] !== undefined &&
-          postSolBalances[buyerIndex] !== undefined
-        ) {
-          const solDelta =
-            preSolBalances[buyerIndex] -
-            postSolBalances[buyerIndex];
-
-          spentSol = solDelta / 1_000_000_000;
-        }
-
-        // ------------------------------------------------
-        // SOLを実際に支払っているか
-        //
-        // 手数料だけの減少をBuyと誤認しないため
-        // 0.0005 SOL以上を支払い条件にする
-        // ------------------------------------------------
-
-        if (spentSol < 0.0005) {
-          continue;
-        }
-
-        // ------------------------------------------------
-        // 新規Holder判定
-        // ------------------------------------------------
-
-        const newHolder = data.pre <= 0;
-
-        buys.push({
-          signature: sigInfo.signature,
-          slot: sigInfo.slot,
-          blockTime: sigInfo.blockTime,
-          buyer: owner,
-          got,
-          spentSol,
-          newHolder
-        });
+      if (
+        preSolBalances[signerIndex] === undefined ||
+        postSolBalances[signerIndex] === undefined
+      ) {
+        continue;
       }
+
+      const solDelta =
+        preSolBalances[signerIndex] -
+        postSolBalances[signerIndex];
+
+      const spentSol =
+        solDelta / 1_000_000_000;
+
+      // SOLを十分に支払っていない場合はBuyではない
+      if (spentSol < 0.0005) {
+        continue;
+      }
+
+      // --------------------------------------------------
+      // 6. 新規Holder判定
+      // --------------------------------------------------
+
+      const newHolder =
+        preMoj <= 0 && postMoj > 0;
+
+      // --------------------------------------------------
+      // 7. Buyとして追加
+      // --------------------------------------------------
+
+      buys.push({
+        signature: sigInfo.signature,
+        slot: sigInfo.slot,
+        blockTime: sigInfo.blockTime,
+        buyer,
+        got,
+        spentSol,
+        newHolder
+      });
     }
 
     // --------------------------------------------------
@@ -237,7 +223,10 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("Buy monitor error:", error);
+    console.error(
+      "Buy monitor error:",
+      error
+    );
 
     return res.status(500).json({
       ok: false,
