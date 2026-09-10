@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   try {
     const tx = req.body || {};
 
-    const text =
+    const caption =
       "🎭 Henohenomoheji Buy!\n\n" +
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
@@ -40,8 +40,11 @@ export default async function handler(req, res) {
       `💸 Market Cap: $${tx.marketCap ?? "N/A"}\n\n` +
       "MOJ • OFFICIAL BUY";
 
+    const videoUrl =
+      "https://raw.githubusercontent.com/henohenomohejicoin/moj-circulating-supply-api/main/v2_awv-70c5583e14afed18.mp4";
+
     const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${token}/sendMessage`,
+      `https://api.telegram.org/bot${token}/sendVideo`,
       {
         method: "POST",
         headers: {
@@ -49,7 +52,8 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           chat_id: chatId,
-          text,
+          video: videoUrl,
+          caption,
           parse_mode: "HTML"
         })
       }
