@@ -22,9 +22,12 @@ export default async function handler(req, res) {
     const buyer = tx.buyer ?? "";
     const signature = tx.signature ?? "";
 
-    // 0.001 SOL = 🫶 1個
-    const spentSol = Number(tx.spent) || 0;
+    // SpentからSOL表記を除去して数値化
+    const spentSol = Number(
+      String(tx.spent ?? "").replace(/[^0-9.]/g, "")
+    ) || 0;
 
+    // 0.001 SOL = 🫶 1個
     const heartCount = Math.max(
       1,
       Math.round(spentSol / 0.001)
@@ -43,7 +46,7 @@ export default async function handler(req, res) {
 
       "\n\n" +
 
-      `🔀 Spent: ${tx.spent ?? "N/A"} SOL\n` +
+      `🔀 Spent: ${spentSol} SOL\n` +
       `🔀 Got: ${tx.got ?? "N/A"} MOJ\n` +
 
       `👤 <a href="https://solscan.io/account/${buyer}">Buyer</a>` +
