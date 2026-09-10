@@ -19,8 +19,12 @@ export default async function handler(req, res) {
   try {
     const tx = req.body || {};
 
+    const buyer = tx.buyer ?? "";
+    const signature = tx.signature ?? "";
+
     const caption =
       "🎭 Henohenomoheji Buy!\n\n" +
+
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
@@ -31,13 +35,28 @@ export default async function handler(req, res) {
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
       '<tg-emoji emoji-id="6073460614154426231">🫶</tg-emoji>' +
+
       "\n\n" +
+
       `🔀 Spent: ${tx.spent ?? "N/A"}\n` +
       `🔀 Got: ${tx.got ?? "N/A"} MOJ\n` +
-      `👤 Buyer: ${tx.buyer ?? "N/A"}\n` +
+
+      `👤 Buyer: <a href="https://solscan.io/account/${buyer}">Buyer</a>\n` +
+
       `🪙 ${tx.newHolder ? "New Holder" : "Holder"}\n` +
+
       `🏷 Price: $${tx.price ?? "N/A"}\n` +
+
       `💸 Market Cap: $${tx.marketCap ?? "N/A"}\n\n` +
+
+      (signature
+        ? `<a href="https://solscan.io/tx/${signature}">TX</a>\n\n`
+        : "") +
+
+      "<a href=\"https://henohenomoheji.tok.best/\">WEB</a>｜" +
+      "<a href=\"https://x.com/henoheno_xyz\">X</a>｜" +
+      "<a href=\"https://t.me/henohenomohejicoin\">TG</a>\n" +
+
       "MOJ • OFFICIAL BUY";
 
     const videoUrl =
