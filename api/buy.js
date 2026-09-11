@@ -27,11 +27,14 @@ export default async function handler(req, res) {
       String(tx.spent ?? "").replace(/[^0-9.]/g, "")
     ) || 0;
 
-    // 0.001 SOL = 🫶 1個
-    const heartCount = Math.max(
-      1,
-      Math.round(spentSol / 0.001)
-    );
+// 0.001 SOL = 🫶 1個（最大100個）
+const heartCount = Math.min(
+  100,
+  Math.max(
+    1,
+    Math.round(spentSol / 0.001)
+  )
+);
 
     const hearts = Array.from(
       { length: heartCount },
