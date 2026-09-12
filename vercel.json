@@ -3,6 +3,10 @@
     {
       "path": "/api/buy-cron",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/x-market",
+      "schedule": "0 0 1 * *"
     }
   ]
 }
